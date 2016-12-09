@@ -251,8 +251,10 @@ conf = openerp.tools.config
 
     def _relativitize(self, path):
         if self._relative_paths:
-            return "join(base, %r)" % os.path.relpath(
+            res = "join(base, %r)" % os.path.relpath(
                 path, self._relative_paths)
+            logger.info('Relativitize: %s -> %s', path, res)
+            return res
         return "%r" % path
 
     def _register_main_startup_script(self, qualified_name):

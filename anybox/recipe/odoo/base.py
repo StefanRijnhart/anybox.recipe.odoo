@@ -193,7 +193,8 @@ class BaseRecipe(object):
         self.clear_retry = clear_retry == 'true'
         self.python_scripts_executable = options.get(
             'python-scripts-executable')
-
+        if self.python_scripts_executable:
+            logger.info('Using python scripts executable %s')
         if self.bool_opt_get(WITH_ODOO_REQUIREMENTS_FILE_OPTION):
             logger.debug("%s option: adding 'pip' to the recipe requirements",
                          WITH_ODOO_REQUIREMENTS_FILE_OPTION)
@@ -207,6 +208,7 @@ class BaseRecipe(object):
             buildout['buildout'].get('relative-paths', 'false')
             )
         if relative_paths == 'true':
+            logger.info('Using relative-paths')
             self._relative_paths = self.buildout_dir
         else:
             self._relative_paths = ''
@@ -1627,6 +1629,8 @@ class BaseRecipe(object):
                 assert os.path.isdir(path), (
                     "Not a directory: %r (aborting)" % path)
 
+        if self._relative_paths:
+            logger.info('Addons paths before making relative: %s', self.addons_paths)
         self.addons_paths = [
             os.path.relpath(
                 addons_path, self.openerp_dir)
@@ -1634,6 +1638,8 @@ class BaseRecipe(object):
             else addons_path
             for addons_path in list(self.addons_paths)
         ]
+        if self._relative_paths:
+            logger.info('Addons paths after making relative: %s', self.addons_paths)
         self.options['options.addons_path'] = ','.join(self.addons_paths)
 
     def insert_odoo_git_addons(self, base_addons):
