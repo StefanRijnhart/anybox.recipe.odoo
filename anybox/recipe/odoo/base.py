@@ -489,17 +489,17 @@ class BaseRecipe(object):
             if len(req.specs) > 1:
                 supported = False
             spec = req.specs[0]
-            if spec[0] != '==':
+            if spec[0] != '==' or '*' in spec.version:
                 supported = False
 
             if not supported:
                 raise UserError(
                     "Version requirement %s from Odoo's requirement file "
                     "is too complicated to be taken automatically into "
-                    "account. Please translate it in your [%s] "
-                    "configuration section and, "
-                    "if from a public fork of Odoo, report this as a "
-                    "request for improvement on the buildout recipe." % (
+                    "account. Please override it in your [%s] "
+                    "configuration section. Future support of this format "
+                    "is pending the release of buildout 3.0.0 which relies on "
+                    "pip rather than setuptools.easy_install." % (
                         req, self.b_options.get('versions', 'versions')))
 
             logger.debug("Applying requirement %s from Odoo's file",
@@ -507,14 +507,23 @@ class BaseRecipe(object):
             versions[project_name] = spec[1]
 
     def read_requirements_pip_after_v8(self, req_path, versions, develops):
-        from pip.req import parse_requirements
         # pip internals are protected against the fact of not passing
         # a session with ``is None``. OTOH, the session is not used
         # if the file is local (direct path, not an URL), so we cheat
         # it.
         fake_session = object()
+        if pip_version() < (10, 0, 0):
+            from pip.req import parse_requirements
+        else:
+            from pip._internal.req import parse_requirements
         for inst_req in parse_requirements(req_path, session=fake_session):
-            req = inst_req.req
+            if pip_version() < (20, 0, 0):
+                req = inst_req.req
+                project_name = req.name.lower()
+            else:
+                req = pkg_resources.Requirement.parse(inst_req.requirement)
+                project_name = req.project_name
+            specs = req.specifier
             logger.debug("Considering requirement from Odoo's file %s",
                          req)
             # GR something more interesting would be to apply the
@@ -550,17 +559,17 @@ class BaseRecipe(object):
             if len(specs) > 1:
                 supported = False
             spec = next(specs.__iter__())
-            if spec.operator != '==':
+            if spec.operator != '==' or '*' in spec.version:
                 supported = False
 
             if not supported:
                 raise UserError(
                     "Version requirement %s from Odoo's requirement file "
                     "is too complicated to be taken automatically into "
-                    "account. Please translate it in your [%s] "
-                    "configuration section and, "
-                    "if from a public fork of Odoo, report this as a "
-                    "request for improvement on the buildout recipe." % (
+                    "account. Please override it in your [%s] "
+                    "configuration section. Future support of this format "
+                    "is pending the release of buildout 3.0.0 which relies on "
+                    "pip rather than setuptools.easy_install." % (
                         req, self.b_options.get('versions', 'versions')))
 
             logger.debug("Applying requirement %s from Odoo's file",
